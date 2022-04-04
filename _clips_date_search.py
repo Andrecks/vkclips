@@ -8,22 +8,25 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 
+def create_path(path):
+    pwd = os.getcwd()
+    path = os.path.join(pwd, path)
+    return path
+
+
 def open_chrome():
     driver = webdriver.Chrome(ChromeDriverManager().install())
     return driver
 
 
 def scroll_down_url(group_name):
-    filepath = ('/Users/nick/Downloads/Telegram Desktop/'
-                f'project/_vkparser/urls/{group_name}/'
-                f'{group_name}_all_clips')
-    urls_directory = os.path.join(os.getcwd(), 'urls')
-    final_directory = os.path.join(urls_directory, group_name)
+    final_directory = create_path(f'urls/{group_name}')
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
+    filepath = final_directory + f'/{group_name}_all_clips'
     if os.path.exists(filepath):
         update_list = input('обновить список ссылок? y/n: ')
-        if update_list == 'y':
+        if update_list in ['y', '', 'yes']:
             pass
         elif update_list == 'n':
             return
@@ -51,9 +54,8 @@ def scroll_down_url(group_name):
 
 def create_url_list(driver, group):
     soup = BeautifulSoup(driver.page_source, "html.parser")
-    html_output_name = ('/Users/nick/Downloads/Telegram Desktop/'
-                        f'project/_vkparser/urls/{group}/'
-                        f'{group}_all_clips')
+    filepath = f'urls/{group}/{group}_all_clips'
+    html_output_name = (os.path.join(os.getcwd(), filepath))
     with open(html_output_name, 'w') as f:
         for parent in soup.find_all(class_="ShortVideoGridItem"):
             base = "https://www.vk.com"
@@ -111,9 +113,7 @@ def search_dates(date1, date2, group):
     m1 = m2 = 0
     f1 = f2 = False
     counter = 0
-    filename = ('/Users/nick/Downloads/Telegram Desktop/'
-                f'project/_vkparser/urls/{group}/'
-                f'{group}_all_clips')
+    filename = create_path(f'urls/{group}/{group}_all_clips')
     crimefile = open(filename, 'r')
     url_list = [line.strip('\n') for line in crimefile.readlines()]
     for url in url_list:
@@ -141,19 +141,15 @@ def search_dates(date1, date2, group):
 
 
 def url_output(date1, date2, group, lines):
-    filename = ('/Users/nick/Downloads/Telegram Desktop/'
-                f'project/_vkparser/urls/{group}/'
-                f'{group}_all_clips')
+    filename = create_path(f'urls/{group}/{group}_all_clips')
     crimefile = open(filename, 'r')
     full_list = [line.strip('\n') for line in crimefile.readlines()]
     if date1 != date2:
-        output_list_file = ('/Users/nick/Downloads/Telegram Desktop/'
-                            f'project/_vkparser/urls/{group}/ '
-                            f'{group} clips {date1} - {date2}')
+        output_list_file = create_path(f'urls/{group}/'
+                                       f'{group} clips {date1} - {date2}')
     else:
-        output_list_file = ('/Users/nick/Downloads/Telegram Desktop/'
-                            f'project/_vkparser/urls/{group}/ '
-                            f'{group} clips {date1}')
+        output_list_file = create_path(f'urls/{group}/'
+                                       f'{group} clips {date1}')
 
     with open(output_list_file, 'w') as f:
         for i in range(len(full_list)):
@@ -167,8 +163,7 @@ def url_output(date1, date2, group, lines):
 
 
 if __name__ == '__main__':
-    current_directory = os.getcwd()
-    final_directory = os.path.join(current_directory, 'urls')
+    final_directory = create_path('urls')
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
     group_name = input('Введи url-название группы или ее id: ')
