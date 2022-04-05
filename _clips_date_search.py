@@ -95,13 +95,13 @@ def date_check(raw_date, date, f):
     date_codes = {'сегодня': today,
                   'вчера': today - datetime.timedelta(days=1)}
     if raw_date[0] in date_codes.keys():
-        raw_date = date_codes[raw_date[0]]
-
-    day = raw_date[0]
-    month = month_codes[raw_date[1]]
-    year = raw_date[2]
-    date_input = f'{day}.{month}.{year}'
-    date_format = date_entry(date_input)
+        date_format = date_codes[raw_date[0]]
+    else:
+        day = raw_date[0]
+        month = month_codes[raw_date[1]]
+        year = raw_date[2]
+        date_input = f'{day}.{month}.{year}'
+        date_format = date_entry(date_input)
     if date >= date_format and not f:
         return True
     else:
