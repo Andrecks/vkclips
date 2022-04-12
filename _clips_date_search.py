@@ -2,10 +2,30 @@
 import datetime
 import os.path
 import time
+import shutil
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+
+
+def get_public_list(n: int, ids: list, flag: str,
+                    date1: datetime, date2: datetime,
+                    search_date_time: datetime):
+
+    driver = open_chrome()
+    f = False
+    if flag == 'y':
+        f = True
+    groups_directory = create_path('groups/')
+    if not os.path.exists(groups_directory):
+        os.makedirs(groups_directory)
+    for id in ids:
+        filepath = groups_directory + f'{id}_all_clips'
+        if not(os.path.exists(filepath)) or f:
+            scroll_down_url(id, driver, search_date_time)
+        lines = search_dates(date1, date2, id, driver, search_date_time)
+        url_output(date1, date2, id, lines, search_date_time)
 
 
 def create_path(path):
@@ -19,24 +39,12 @@ def open_chrome():
     return driver
 
 
-def scroll_down_url(group_name):
-    final_directory = create_path(f'urls/{group_name}')
-    if not os.path.exists(final_directory):
-        os.makedirs(final_directory)
-    filepath = final_directory + f'/{group_name}_all_clips'
-    if os.path.exists(filepath):
-        update_list = input('обновить список ссылок? y/n: ')
-        if update_list in ['y', '', 'yes']:
-            pass
-        elif update_list == 'n':
-            return
-    driver = open_chrome()
+def scroll_down_url(group_name, driver, search_date_time):
     driver.get(f"https://vk.com/clips/{group_name}")
     time.sleep(3)
     scroll_pause_time = 1
     screen_height = driver.execute_script("return window.screen.height;")
     i = 1
-
     while True:
         driver.execute_script(
             "window.scrollTo(0, {screen_height}*{i});".format(
@@ -47,15 +55,14 @@ def scroll_down_url(group_name):
             "return document.body.scrollHeight;")
         if (screen_height) * i > scroll_height:
             break
-    create_url_list(driver, group_name)
-    driver.close()
-    return
+    return create_url_list(driver, group_name, search_date_time)
 
 
-def create_url_list(driver, group):
+def create_url_list(driver, group, search_date_time):
     soup = BeautifulSoup(driver.page_source, "html.parser")
-    filepath = f'urls/{group}/{group}_all_clips'
-    html_output_name = (os.path.join(os.getcwd(), filepath))
+    filepath = f'groups/{group}_all_clips'
+    # html_output_name = (os.path.join(os.getcwd(), filepath))
+    html_output_name = create_path(filepath)
     with open(html_output_name, 'w') as f:
         for parent in soup.find_all(class_="ShortVideoGridItem"):
             base = "https://www.vk.com"
@@ -71,8 +78,7 @@ def date_entry(date_input):
     try:
         day, month, year = map(int, date_input.split('.'))
     except ValueError:
-        print('Дата не введена или введена через жопу, '
-              'используется сегоднящняя дата...')
+        print(f'DATA BBEDEHA XYEBO, 6YDET {datetime.date.today()}')
     if year < 2000:
         year += 2000
     return datetime.date(year, month, day)
@@ -108,12 +114,11 @@ def date_check(raw_date, date, f):
         return date > date_format
 
 
-def search_dates(date1, date2, group):
-    driver = open_chrome()
+def search_dates(date1, date2, group, driver, search_date_time):
     m1 = m2 = 0
     f1 = f2 = False
     counter = 0
-    filename = create_path(f'urls/{group}/{group}_all_clips')
+    filename = create_path(f'groups/{group}_all_clips')
     crimefile = open(filename, 'r')
     url_list = [line.strip('\n') for line in crimefile.readlines()]
     for url in url_list:
@@ -140,15 +145,15 @@ def search_dates(date1, date2, group):
     return [0, len(url_list)-1]
 
 
-def url_output(date1, date2, group, lines):
-    filename = create_path(f'urls/{group}/{group}_all_clips')
+def url_output(date1, date2, group, lines, search_date_time):
+    filename = create_path(f'groups/{group}_all_clips')
     crimefile = open(filename, 'r')
     full_list = [line.strip('\n') for line in crimefile.readlines()]
     if date1 != date2:
-        output_list_file = create_path(f'urls/{group}/'
+        output_list_file = create_path(f'search_history/{search_date_time}/'
                                        f'{group} clips {date1} - {date2}')
     else:
-        output_list_file = create_path(f'urls/{group}/'
+        output_list_file = create_path(f'search_history/{search_date_time}/'
                                        f'{group} clips {date1}')
 
     with open(output_list_file, 'w') as f:
@@ -158,17 +163,35 @@ def url_output(date1, date2, group, lines):
     crimefile = open(output_list_file, 'r')
     full_list = [line.strip('\n') for line in crimefile.readlines()]
     if len(full_list) == 0:
-        print('КЛИПОВ.НЕТ')
-        os.remove(output_list_file)
+        print('!!! KJINIIOB B {group} NE HANDEHO !!!')
+    return
+
+
+def unite_search_results(search_directory):
+    file_output = create_path(f'{search_directory}' + 'full_list')
+    with open(file_output, 'wb') as outfile:
+        for filename in os.listdir(search_directory):
+            if filename == file_output:
+                # don't want to copy the output into the output
+                continue
+            with open(search_directory+filename, 'rb') as readfile:
+                shutil.copyfileobj(readfile, outfile)
+    return
 
 
 if __name__ == '__main__':
-    final_directory = create_path('urls')
-    if not os.path.exists(final_directory):
-        os.makedirs(final_directory)
-    group_name = input('Введи url-название группы или ее id: ')
-    date1 = date_entry(input('Введите первую дату (в формате DD.MM.YY) : '))
-    date2 = date_entry(input('Введите вторую дату (в формате DD.MM.YY) : '))
-    scroll_down_url(group_name)
-    lines = search_dates(date1, date2, group_name)
-    url_output(date1, date2, group_name, lines)
+    groups_directory = create_path('groups')
+    if not os.path.exists(groups_directory):
+        os.makedirs(groups_directory)
+    n = int(input('CKOJLKO IIA6JLNKOV?: '))
+    print('KOIINIIACTN CIINCOK: ')
+    group_list = [input().strip() for i in range(n)]
+    flag = str(input('O6HOBNTb CIINCKN KJINIIOB?: [y/n]: '))
+    date1 = date_entry(input('BBEDI IIEPBYU DATY (DD.MM.YY): '))
+    date2 = date_entry(input('BBEDI BTORYU DATY (DD.MM.YY): '))
+    search_date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    search_directory = create_path(f'search_history/{search_date_time}/')
+    if not os.path.exists(search_directory):
+        os.makedirs(search_directory)
+    get_public_list(n, group_list, flag, date1, date2, search_date_time)
+    unite_search_results(search_directory)
