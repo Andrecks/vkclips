@@ -78,7 +78,7 @@ def date_entry(date_input):
     try:
         day, month, year = map(int, date_input.split('.'))
     except ValueError:
-        print(f'DATA BBEDEHA XYEBO, 6YDET {datetime.date.today()}')
+        print(f'DATA BBEDEHA HE BEPHO, 6YDET {datetime.date.today()}')
     if year < 2000:
         year += 2000
     return datetime.date(year, month, day)
